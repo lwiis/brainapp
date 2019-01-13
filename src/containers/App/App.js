@@ -53,7 +53,7 @@ class App extends Component {
   //   .then(console.log);
   // }
 
-    loadUser = (user) => {
+  loadUser = (user) => {
     this.setState({
       user: {
         id: user.id,
@@ -115,7 +115,7 @@ class App extends Component {
     //console.log(this.state);
   }
 
-  onButtonSubmit = () => {
+  onPictureSubmit = () => {
     this.setState({ imageUrl: this.state.input });
     //console.log(this.state);
 
@@ -123,7 +123,23 @@ class App extends Component {
 
     //we're passing state.input instead of state.imageUrl. this is because setState() is a request rather than an immediate command to update the component. For better perceived performance, React may delay it, and then update several components in a single pass. React does not guarantee that the state changes are applied immediately.
     app.models.predict(Clarifai.FACE_DETECT_MODEL, this.state.input)
-      .then(response => this.displayFaceBox(this.calculateFaceLocation(response)))
+      .then(response => {
+        if (response) {
+          fetch('http://localhost:3001/image', {
+            method: 'put',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: this.state.user.id
+            })
+          }
+          )
+          .then(res => res.json())
+          .then(user => {
+            this.setState(Object.assign(this.state.user, {entries: user.entries}));
+          })
+        }
+        this.displayFaceBox(this.calculateFaceLocation(response))
+      })
       .catch(err => console.log(err));
   }
 
@@ -142,8 +158,8 @@ class App extends Component {
           ?
           <div>
             <Logo />
-            <Rank name={this.state.user.name} entries={this.state.user.entries}/>
-            <ImageLinkForm onInputChange={this.onInputChange} onButtonSubmit={this.onButtonSubmit} />
+            <Rank name={this.state.user.name} entries={this.state.user.entries} />
+            <ImageLinkForm onInputChange={this.onInputChange} onButtonSubmit={this.onPictureSubmit} />
             <FaceRecognitionOutput imageUrl={this.state.imageUrl} boxArray={this.state.boxArray} />
           </div>
           : (
