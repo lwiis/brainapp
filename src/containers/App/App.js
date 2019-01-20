@@ -5,15 +5,18 @@ import ImageLinkForm from '../../components/ImageLinkForm/ImageLinkForm';
 import Logo from '../../components/Logo/Logo';
 import Rank from '../../components/Rank/Rank';
 import Particles from 'react-particles-js';
-import { appKey } from '../../clarifaiSettings.js';
-import Clarifai from 'clarifai';
+//moved to server
+//import { appKey } from '../../clarifaiSettings.js';
+// moved to server code
+//import Clarifai from 'clarifai';
 import FaceRecognitionOutput from '../../components/FaceRecognitionOutput/FaceRecognitionOutput';
 import Signin from '../../components/Signin/Signin';
 import Register from '../../components/Register/Register';
 
-const app = new Clarifai.App({
-  apiKey: appKey
-});
+// moved to server
+// const app = new Clarifai.App({
+//   apiKey: appKey
+// });
 
 const particlesOptions = {
   particles: {
@@ -27,24 +30,26 @@ const particlesOptions = {
   }
 };
 
+const initialState = {
+  input: '',
+  imageUrl: '',
+  boxArray: [{}],
+  route: 'signin',
+  isSignedIn: false,
+  user: {
+    id: '',
+    name: '',
+    email: '',
+    entries: 0,
+    joined: ''
+  }
+};
+
 class App extends Component {
   constructor() {
     super();
 
-    this.state = {
-      input: '',
-      imageUrl: '',
-      boxArray: [{}],
-      route: 'signin',
-      isSignedIn: false,
-      user: {
-        id: '',
-        name: '',
-        email: '',
-        entries: 0,
-        joined: ''
-      }
-    }
+    this.state = initialState;
   }
 
   // componentDidMount() {
@@ -122,7 +127,15 @@ class App extends Component {
     // http://townsquare.media/site/295/files/2014/12/The-Faces-Band-Photo.jpg
 
     //we're passing state.input instead of state.imageUrl. this is because setState() is a request rather than an immediate command to update the component. For better perceived performance, React may delay it, and then update several components in a single pass. React does not guarantee that the state changes are applied immediately.
-    app.models.predict(Clarifai.FACE_DETECT_MODEL, this.state.input)
+    //app.models.predict(Clarifai.FACE_DETECT_MODEL, this.state.input)
+      fetch('http://localhost:3001/imageurl', {
+        method: 'post',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input: this.state.input
+        })
+      })
+      .then(response => response.json())
       .then(response => {
         if (response) {
           fetch('http://localhost:3001/image', {
@@ -133,10 +146,11 @@ class App extends Component {
             })
           }
           )
-          .then(res => res.json())
-          .then(user => {
-            this.setState(Object.assign(this.state.user, {entries: user.entries}));
-          })
+            .then(res => res.json())
+            .then(user => {
+              this.setState(Object.assign(this.state.user, { entries: user.entries }));
+            })
+            .catch(console.log);
         }
         this.displayFaceBox(this.calculateFaceLocation(response))
       })
@@ -144,7 +158,11 @@ class App extends Component {
   }
 
   onRouteChange = (route) => {
-    this.setState({ isSignedIn: (route === 'home') })
+    if(route === 'signin') {
+      this.setState(initialState);
+    } else if(route === 'home') {
+      this.setState({ isSignedIn: true });
+    }
     this.setState({ route: route });
   }
 
